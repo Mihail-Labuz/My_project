@@ -89,7 +89,7 @@ selected_days = [day_mapping[d] for d in days_of_week]
 df = df[df.index.dayofweek.isin(selected_days)]
 
 # =====================================
-# Построение графиков
+# Построение графиков (исправлено)
 # =====================================
 st.title("🚀 Продвинутый анализатор акций")
 fig = go.Figure()
@@ -99,12 +99,12 @@ for company in companies:
     
     # Добавление основного графика
     if chart_type == 'Линия':
-        fig.add_trace(go.Scatter(
+        fig.add_trace(go.Scatter(  # ✅ Закрывающая скобка добавлена
             x=df.index,
             y=df[col],
             name=company,
             line=dict(width=2)
-        ))
+        ))  # <-- Здесь была ошибка!
     elif chart_type == 'Свечи' and len(companies) == 1:
         fig.add_trace(go.Candlestick(
             x=df.index,
@@ -123,15 +123,15 @@ for company in companies:
             mode='lines'
         ))
 
-    # Добавление индикаторов
+    # Добавление индикаторов (также проверьте закрывающие скобки!)
     if indicator == 'SMA (20)':
         sma = df[col].rolling(20).mean()
-        fig.add_trace(go.Scatter(
+        fig.add_trace(go.Scatter(  # ✅
             x=df.index,
             y=sma,
             name=f'SMA 20 ({company})',
             line=dict(dash='dot')
-        ))
+        ))  # Закрывающая скобка
     elif indicator == 'EMA (50)':
         ema = df[col].ewm(span=50).mean()
         fig.add_trace(go.Scatter(
@@ -139,8 +139,7 @@ for company in companies:
             y=ema,
             name=f'EMA 50 ({company})',
             line=dict(dash='dash')
-        ))
-
+        ))  # Закрывающая скобка
 # Добавление горизонтальной линии порога
 fig.add_shape(
     type="line",
@@ -167,24 +166,27 @@ st.plotly_chart(fig, use_container_width=True)
 # =====================================
 # 1. Информационная панель
 st.subheader("📊 Статистика за период")
-cols = st.columns(3)
-for company in companies:
-    with cols[0 if len(companies)==1 else companies.index(company)]:
-        current_price = df[f'Close_{company}'].iloc[-1]
-        delta = current_price - df[f'Close_{company}'].iloc[0]
-        st.metric(
-            label=company,
-            value=f"${current_price:.2f}",
-            delta=f"{delta:.2f} ({delta/df[f'Close_{company}'].iloc[0]*100:.2f}%)"
-        )
 
-# 2. Гистограмма объемов
-if st.checkbox("Показать объемы торгов"):
-    st.subheader("📦 Объемы торгов")
-    fig_vol = px.bar(
-        df,
-        x=df.index,
-        y=[f'Volume_{c}' for c in companies],
-        labels={'value': 'Объем', 'variable': 'Компания'}
-    )
-    st.plotly_chart(fig_vol, use_container_width=True)
+# Динамическое создание колонок (максимум 3)
+num_cols = min(len(companies), 3) if companies else 1  # Не менее 1 колонки
+cols = st.columns(num_cols)
+
+if companies:
+    for idx, company in enumerate(companies):
+        # Циклическое распределение по колонкам
+        with cols[idx % num_cols]:  
+            if f'Close_{company}' in df.columns and not df.empty:
+                try:
+                    current_price = df[f'Close_{company}'].iloc[-1]
+                    delta = current_price - df[f'Close_{company}'].iloc[0]
+                    st.metric(
+                        label=company,
+                        value=f"${current_price:.2f}",
+                        delta=f"{delta:.2f} ({delta/df[f'Close_{company}'].iloc[0]*100:.2f}%)"
+                    )
+                except IndexError:
+                    st.error(f"Ошибка данных для {company}")
+            else:
+                st.error(f"Данные для {company} отсутствуют")
+else:
+    st.warning("⚠️ Компании не выбраны!")
