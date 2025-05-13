@@ -9,7 +9,6 @@ def load_data():
     return pd.read_csv("15 Years Stock Data of NVDA AAPL MSFT GOOGL and AMZN.csv", parse_dates=['Date'])
 
 data = load_data()
-# Сайдбар с 7 контролами
 st.sidebar.header("🎚️ Панель управления")
 
 # 1. Мультиселект компаний с иконками
