@@ -37,15 +37,28 @@ time_resolution = st.sidebar.selectbox(
     help="Агрегация данных по временным интервалам"
 )
 
-# 3. Ползунок для порога цены
+# 3. Ползунок для порога цены (исправленная версия)
+# Безопасный расчет максимального значения
+selected_columns = [f'Close_{c}' for c in companies]
+max_val = 100  # Значение по умолчанию
+
+if selected_columns:
+    try:
+        max_val = data[selected_columns].max().max()
+        if pd.isna(max_val):  # Проверка на NaN
+            max_val = 100
+    except KeyError:  # На случай отсутствия колонок
+        max_val = 100
+
+max_value = int(max_val)
+
 price_threshold = st.sidebar.slider(
     "💰 Порог цены:",
     min_value=0,
-    max_value=int(data[[f'Close_{c}' for c in companies]].max().max()),
-    value=150,
+    max_value=max_value,
+    value=min(150, max_value),  # Автоподстройка значения
     help="Отметка для визуализации ключевых уровней"
 )
-
 # 4. Переключатель типа графика
 chart_type = st.sidebar.radio(
     "📊 Тип графика:",
@@ -73,9 +86,7 @@ indicator = st.sidebar.selectbox(
     index=0
 )
 
-# =====================================
 # Обработка данных
-# =====================================
 # Агрегация данных по выбранному масштабу
 df = data.set_index('Date')
 if time_resolution == 'Недели':
@@ -99,7 +110,7 @@ for company in companies:
     
     # Добавление основного графика
     if chart_type == 'Линия':
-        fig.add_trace(go.Scatter(  # ✅ Закрывающая скобка добавлена
+        fig.add_trace(go.Scatter(  
             x=df.index,
             y=df[col],
             name=company,
@@ -126,7 +137,7 @@ for company in companies:
     # Добавление индикаторов (также проверьте закрывающие скобки!)
     if indicator == 'SMA (20)':
         sma = df[col].rolling(20).mean()
-        fig.add_trace(go.Scatter(  # ✅
+        fig.add_trace(go.Scatter(  
             x=df.index,
             y=sma,
             name=f'SMA 20 ({company})',
