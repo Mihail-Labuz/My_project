@@ -9,10 +9,7 @@ def load_data():
     return pd.read_csv("15 Years Stock Data of NVDA AAPL MSFT GOOGL and AMZN.csv", parse_dates=['Date'])
 
 data = load_data()
-
-# =====================================
 # Сайдбар с 7 контролами
-# =====================================
 st.sidebar.header("🎚️ Панель управления")
 
 # 1. Мультиселект компаний с иконками
@@ -98,16 +95,12 @@ elif time_resolution == 'Месяцы':
 day_mapping = {'Пн': 0, 'Вт': 1, 'Ср': 2, 'Чт': 3, 'Пт': 4, 'Сб': 5, 'Вс': 6}
 selected_days = [day_mapping[d] for d in days_of_week]
 df = df[df.index.dayofweek.isin(selected_days)]
-
-# =====================================
-# Построение графиков (исправлено)
-# =====================================
+# Построение графиков 
 st.title("🚀 Продвинутый анализатор акций")
 fig = go.Figure()
 
 for company in companies:
     col = f'Close_{company}'
-    
     # Добавление основного графика
     if chart_type == 'Линия':
         fig.add_trace(go.Scatter(  
@@ -115,7 +108,7 @@ for company in companies:
             y=df[col],
             name=company,
             line=dict(width=2)
-        ))  # <-- Здесь была ошибка!
+        ))  
     elif chart_type == 'Свечи' and len(companies) == 1:
         fig.add_trace(go.Candlestick(
             x=df.index,
@@ -134,7 +127,7 @@ for company in companies:
             mode='lines'
         ))
 
-    # Добавление индикаторов (также проверьте закрывающие скобки!)
+    # Добавление индикаторов 
     if indicator == 'SMA (20)':
         sma = df[col].rolling(20).mean()
         fig.add_trace(go.Scatter(  
@@ -142,7 +135,7 @@ for company in companies:
             y=sma,
             name=f'SMA 20 ({company})',
             line=dict(dash='dot')
-        ))  # Закрывающая скобка
+        ))  
     elif indicator == 'EMA (50)':
         ema = df[col].ewm(span=50).mean()
         fig.add_trace(go.Scatter(
@@ -150,7 +143,7 @@ for company in companies:
             y=ema,
             name=f'EMA 50 ({company})',
             line=dict(dash='dash')
-        ))  # Закрывающая скобка
+        ))  
 # Добавление горизонтальной линии порога
 fig.add_shape(
     type="line",
@@ -171,20 +164,15 @@ fig.update_layout(
 )
 
 st.plotly_chart(fig, use_container_width=True)
-
-# =====================================
 # Дополнительные виджеты
-# =====================================
 # 1. Информационная панель
 st.subheader("📊 Статистика за период")
-
 # Динамическое создание колонок (максимум 3)
 num_cols = min(len(companies), 3) if companies else 1  # Не менее 1 колонки
 cols = st.columns(num_cols)
 
 if companies:
     for idx, company in enumerate(companies):
-        # Циклическое распределение по колонкам
         with cols[idx % num_cols]:  
             if f'Close_{company}' in df.columns and not df.empty:
                 try:
